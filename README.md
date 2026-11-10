@@ -59,3 +59,16 @@ cp .env.example .env
 | `PLUMMET_LOG_LEVEL` | `INFO` | How much detail the logs show |
 
 Telegram alerts only work when both the token and the chat ID are set.
+
+## Data
+
+Plummet uses SQLite by default, so you do not need a database server.
+The file is created at `data/plummet.db` the first time the app runs.
+
+| Table | What it saves |
+|---|---|
+| `products` | The URL, store, target price and last price of each product |
+| `price_records` | Every price found for a product, with the date |
+
+Prices are saved as whole cents (for example `1999` for `19.99`)
+to avoid rounding problems. All dates are in UTC.
