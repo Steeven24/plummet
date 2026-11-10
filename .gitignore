@@ -1,0 +1,29 @@
+# AI tools
+.claude/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Data
+*.db
+*.sqlite3
+logs/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
