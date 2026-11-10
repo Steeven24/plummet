@@ -47,6 +47,15 @@ def test_telegram_enabled_with_token_and_chat(monkeypatch):
     assert "123:abc" not in repr(settings)
 
 
+def test_empty_values_use_defaults(tmp_path):
+    (tmp_path / ".env").write_text("PLUMMET_TELEGRAM_BOT_TOKEN=\nPLUMMET_MAX_RETRIES=\n")
+
+    settings = Settings()
+
+    assert settings.telegram_bot_token is None
+    assert settings.max_retries == 3
+
+
 def test_rejects_interval_too_short(monkeypatch):
     monkeypatch.setenv("PLUMMET_CHECK_INTERVAL_MINUTES", "1")
 
