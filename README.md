@@ -12,3 +12,29 @@ and sends you a Telegram message when a price drops below your target.
 - Get Telegram alerts when the price goes down
 - Run checks automatically with cron
 - See everything in a simple web dashboard
+
+## Project structure
+
+This is a monorepo. Each app lives in its own folder and they all share
+the code in `packages/core`.
+
+```
+plummet/
+├── apps/
+│   ├── api/       # REST API for the web dashboard
+│   ├── bot/       # Telegram bot that sends alerts
+│   └── worker/    # Runs the price checks with cron
+├── packages/
+│   └── core/      # Shared code: database, scrapers, price logic
+└── Makefile       # Common commands
+```
+
+## Getting started
+
+You need Python 3.12 and [uv](https://docs.astral.sh/uv/).
+
+```bash
+make install   # install all packages
+make test      # run the tests
+make lint      # check the code style
+```
