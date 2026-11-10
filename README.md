@@ -38,3 +38,24 @@ make install   # install all packages
 make test      # run the tests
 make lint      # check the code style
 ```
+
+## Configuration
+
+Plummet reads its settings from environment variables or from a `.env` file.
+All variables start with `PLUMMET_`.
+
+```bash
+cp .env.example .env
+```
+
+| Variable | Default | What it does |
+|---|---|---|
+| `PLUMMET_DATABASE_URL` | `sqlite:///data/plummet.db` | Where the data is saved |
+| `PLUMMET_TELEGRAM_BOT_TOKEN` | — | Token from @BotFather |
+| `PLUMMET_TELEGRAM_CHAT_ID` | — | Chat that gets the alerts |
+| `PLUMMET_REQUEST_TIMEOUT` | `15` | Seconds to wait for a store page |
+| `PLUMMET_MAX_RETRIES` | `3` | Tries before a check fails |
+| `PLUMMET_CHECK_INTERVAL_MINUTES` | `30` | Time between checks (min. 5) |
+| `PLUMMET_LOG_LEVEL` | `INFO` | How much detail the logs show |
+
+Telegram alerts only work when both the token and the chat ID are set.
