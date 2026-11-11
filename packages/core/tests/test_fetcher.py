@@ -2,18 +2,10 @@ import httpx
 import pytest
 
 from plummet_core.config import Settings
-from plummet_core.fetcher import Fetcher, FetchError, build_headers
+from plummet_core.fetcher import FetchError, build_headers
 
 
-def make_fetcher(handler, retries=3):
-    """A fetcher that uses a fake server instead of the internet."""
-    settings = Settings(max_retries=retries)
-    client = httpx.Client(transport=httpx.MockTransport(handler))
-    waits = []
-    return Fetcher(settings, client=client, sleep=waits.append), waits
-
-
-def test_returns_page():
+def test_returns_page(make_fetcher):
     fetcher, _ = make_fetcher(lambda request: httpx.Response(200, text="<h1>Hi</h1>"))
 
     page = fetcher.fetch("https://shop.test/a")
@@ -23,7 +15,7 @@ def test_returns_page():
     assert page.url == "https://shop.test/a"
 
 
-def test_not_found_fails_without_retry():
+def test_not_found_fails_without_retry(make_fetcher):
     calls = []
 
     def handler(request):
@@ -44,7 +36,7 @@ def test_headers_look_like_a_browser():
     assert "text/html" in headers["Accept"]
 
 
-def test_closes_client_when_used_with_with():
+def test_closes_client_when_used_with_with(make_fetcher):
     fetcher, _ = make_fetcher(lambda request: httpx.Response(200))
 
     with fetcher:
