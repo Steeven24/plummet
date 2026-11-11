@@ -75,16 +75,28 @@ def element_value(element: Tag | None) -> str | None:
 
 def from_meta_tags(soup: BeautifulSoup) -> ParsedProduct | None:
     """Find the price in <meta> tags or in microdata (itemprop="price")."""
-    price_text = _first_meta(soup, _PRICE_META) or element_value(
-        soup.find(attrs={"itemprop": "price"})
-    )
+    price_text = _first_meta(soup, _PRICE_META)
     price = _to_decimal(price_text)
+    if price is None:
+        price_text, price = _from_microdata(soup.find(attrs={"itemprop": "price"}))
     if price is None:
         return None
     currency = _first_meta(soup, _CURRENCY_META) or element_value(
         soup.find(attrs={"itemprop": "priceCurrency"})
     )
     return ParsedProduct(price=price, currency=currency or detect_currency(price_text))
+
+
+def _from_microdata(element: Tag | None) -> tuple[str | None, Decimal | None]:
+    """The "content" attribute uses the schema.org format ("2549.00"), but the
+    visible text uses the store format ("2.549"), so we read them in different ways.
+    """
+    if element is None:
+        return None, None
+    if content := element.get("content"):
+        return str(content), _to_decimal(content)
+    text = element_value(element)
+    return text, parse_price_text(text)
 
 
 def _first_meta(soup: BeautifulSoup, names: list[str]) -> str | None:
