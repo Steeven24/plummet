@@ -27,11 +27,15 @@ class _TemporaryError(Exception):
 
 
 def parse_retry_after(value: str | None) -> float | None:
-    """Read the Retry-After header. We only support the number of seconds."""
+    """Read the Retry-After header. We only support the number of seconds.
+
+    Return None when the value is missing or not useful, so the normal wait is used.
+    """
     try:
-        return min(float(value), MAX_WAIT_SECONDS) if value else None
+        seconds = float(value) if value else 0.0
     except ValueError:
         return None
+    return min(seconds, MAX_WAIT_SECONDS) if seconds > 0 else None
 
 
 @dataclass(frozen=True)
