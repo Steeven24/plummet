@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from bs4 import BeautifulSoup
 
-from plummet_core.parsing.structured import from_json_ld
+from plummet_core.parsing.structured import from_json_ld, from_meta_tags
 
 
 def soup(html):
@@ -51,3 +51,31 @@ def test_json_ld_ignores_broken_json_and_other_types():
     )
 
     assert from_json_ld(page) is None
+
+
+def test_meta_tags():
+    page = soup(
+        '<meta property="product:price:amount" content="2549.00">'
+        '<meta property="product:price:currency" content="MXN">'
+    )
+
+    product = from_meta_tags(page)
+
+    assert product.price == Decimal("2549.00")
+    assert product.currency == "MXN"
+
+
+def test_microdata_content_attribute():
+    page = soup('<span itemprop="price" content="19.99">$19.99</span>')
+
+    assert from_meta_tags(page).price == Decimal("19.99")
+
+
+def test_microdata_visible_text_with_thousands():
+    page = soup('<span itemprop="price">2.549</span>')
+
+    assert from_meta_tags(page).price == Decimal("2549")
+
+
+def test_meta_tags_without_price():
+    assert from_meta_tags(soup("<p>No price here</p>")) is None
