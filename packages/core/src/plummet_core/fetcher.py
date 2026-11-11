@@ -11,6 +11,7 @@ from plummet_core.config import Settings, get_settings
 # Status codes that can work if we try again later.
 RETRY_STATUS = {429, 500, 502, 503, 504}
 BACKOFF_SECONDS = 1.0
+MAX_WAIT_SECONDS = 30.0
 
 
 class FetchError(Exception):
@@ -19,6 +20,18 @@ class FetchError(Exception):
 
 class _TemporaryError(Exception):
     """An error that can be fixed by trying again."""
+
+    def __init__(self, message: str, wait: float | None = None):
+        super().__init__(message)
+        self.wait = wait
+
+
+def parse_retry_after(value: str | None) -> float | None:
+    """Read the Retry-After header. We only support the number of seconds."""
+    try:
+        return min(float(value), MAX_WAIT_SECONDS) if value else None
+    except ValueError:
+        return None
 
 
 @dataclass(frozen=True)
@@ -68,7 +81,7 @@ class Fetcher:
             except _TemporaryError as error:
                 if attempt == attempts - 1:
                     raise FetchError(f"{error} (after {attempts} tries)") from error
-                self.sleep(BACKOFF_SECONDS * 2**attempt)
+                self.sleep(error.wait or BACKOFF_SECONDS * 2**attempt)
         raise AssertionError("unreachable")
 
     def _fetch_once(self, url: str) -> Page:
@@ -77,7 +90,10 @@ class Fetcher:
         except httpx.HTTPError as error:
             raise _TemporaryError(f"Could not open {url}: {error}") from error
         if response.status_code in RETRY_STATUS:
-            raise _TemporaryError(f"{url} answered with status {response.status_code}")
+            raise _TemporaryError(
+                f"{url} answered with status {response.status_code}",
+                wait=parse_retry_after(response.headers.get("Retry-After")),
+            )
         if response.status_code >= 400:
             raise FetchError(f"{url} answered with status {response.status_code}")
         return Page(url=str(response.url), status_code=response.status_code, html=response.text)
