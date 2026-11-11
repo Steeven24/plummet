@@ -1,14 +1,24 @@
 """Download store pages over HTTP."""
 
+import time
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import httpx
 
 from plummet_core.config import Settings, get_settings
 
+# Status codes that can work if we try again later.
+RETRY_STATUS = {429, 500, 502, 503, 504}
+BACKOFF_SECONDS = 1.0
+
 
 class FetchError(Exception):
     """The page could not be downloaded."""
+
+
+class _TemporaryError(Exception):
+    """An error that can be fixed by trying again."""
 
 
 @dataclass(frozen=True)
@@ -35,8 +45,14 @@ class Fetcher:
     Use it with `with Fetcher() as fetcher:` so the client is closed at the end.
     """
 
-    def __init__(self, settings: Settings | None = None, client: httpx.Client | None = None):
+    def __init__(
+        self,
+        settings: Settings | None = None,
+        client: httpx.Client | None = None,
+        sleep: Callable[[float], None] = time.sleep,
+    ):
         self.settings = settings or get_settings()
+        self.sleep = sleep
         self.client = client or httpx.Client(
             headers=build_headers(self.settings),
             timeout=self.settings.request_timeout,
@@ -44,10 +60,24 @@ class Fetcher:
         )
 
     def fetch(self, url: str) -> Page:
+        """Download a page. Try again with a longer wait each time if it fails."""
+        attempts = self.settings.max_retries + 1
+        for attempt in range(attempts):
+            try:
+                return self._fetch_once(url)
+            except _TemporaryError as error:
+                if attempt == attempts - 1:
+                    raise FetchError(f"{error} (after {attempts} tries)") from error
+                self.sleep(BACKOFF_SECONDS * 2**attempt)
+        raise AssertionError("unreachable")
+
+    def _fetch_once(self, url: str) -> Page:
         try:
             response = self.client.get(url)
         except httpx.HTTPError as error:
-            raise FetchError(f"Could not open {url}: {error}") from error
+            raise _TemporaryError(f"Could not open {url}: {error}") from error
+        if response.status_code in RETRY_STATUS:
+            raise _TemporaryError(f"{url} answered with status {response.status_code}")
         if response.status_code >= 400:
             raise FetchError(f"{url} answered with status {response.status_code}")
         return Page(url=str(response.url), status_code=response.status_code, html=response.text)
