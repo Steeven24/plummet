@@ -5,9 +5,9 @@ from collections.abc import Iterator
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
-from plummet_core.parsing.price_text import parse_price_text
+from plummet_core.parsing.price_text import detect_currency, parse_price_text
 from plummet_core.parsing.result import ParsedProduct
 
 
@@ -59,3 +59,37 @@ def _to_decimal(value: Any) -> Decimal | None:
     except InvalidOperation:
         return parse_price_text(str(value))
     return price if price > 0 else None
+
+
+_PRICE_META = ["product:price:amount", "og:price:amount"]
+_CURRENCY_META = ["product:price:currency", "og:price:currency"]
+
+
+def element_value(element: Tag | None) -> str | None:
+    """Return the "content" attribute of a tag, or its text."""
+    if element is None:
+        return None
+    value = element.get("content") or element.get_text(" ", strip=True)
+    return str(value) if value else None
+
+
+def from_meta_tags(soup: BeautifulSoup) -> ParsedProduct | None:
+    """Find the price in <meta> tags or in microdata (itemprop="price")."""
+    price_text = _first_meta(soup, _PRICE_META) or element_value(
+        soup.find(attrs={"itemprop": "price"})
+    )
+    price = _to_decimal(price_text)
+    if price is None:
+        return None
+    currency = _first_meta(soup, _CURRENCY_META) or element_value(
+        soup.find(attrs={"itemprop": "priceCurrency"})
+    )
+    return ParsedProduct(price=price, currency=currency or detect_currency(price_text))
+
+
+def _first_meta(soup: BeautifulSoup, names: list[str]) -> str | None:
+    for name in names:
+        tag = soup.find("meta", attrs={"property": name}) or soup.find("meta", attrs={"name": name})
+        if value := element_value(tag):
+            return value
+    return None
