@@ -72,3 +72,13 @@ The file is created at `data/plummet.db` the first time the app runs.
 
 Prices are saved as whole cents (for example `1999` for `19.99`)
 to avoid rounding problems. All dates are in UTC.
+
+## How pages are downloaded
+
+The fetcher in `plummet_core.fetcher` downloads each store page with
+browser-like headers. When a request fails for a temporary reason
+(network error, `429` or `5xx`), it tries again and waits a bit longer
+each time: 1s, 2s, 4s... If the store sends a `Retry-After` header, it
+waits that time instead (max 30s). Errors like `404` fail at once.
+
+Please be polite with stores: do not check the same product too often.
