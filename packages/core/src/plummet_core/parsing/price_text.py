@@ -39,3 +39,28 @@ def _normalize(raw: str) -> str:
     if len(parts) > 2 or len(parts[-1]) == 3:
         return raw.replace(mark, "")
     return raw.replace(mark, ".")
+
+
+# The order matters: "US$" and "R$" must be checked before "$".
+_CURRENCY_SYMBOLS = [
+    ("US$", "USD"),
+    ("R$", "BRL"),
+    ("S/", "PEN"),
+    ("€", "EUR"),
+    ("£", "GBP"),
+]
+_CURRENCY_CODE = re.compile(r"\b(USD|EUR|GBP|MXN|BRL|ARS|COP|CLP|PEN)\b")
+
+
+def detect_currency(text: str | None) -> str | None:
+    """Return the ISO code of the currency in the text, if it is clear.
+
+    A single "$" is used by many countries, so we return None for it.
+    """
+    text = text or ""
+    if match := _CURRENCY_CODE.search(text.upper()):
+        return match.group(1)
+    for symbol, code in _CURRENCY_SYMBOLS:
+        if symbol in text:
+            return code
+    return None
