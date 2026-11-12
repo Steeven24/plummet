@@ -14,6 +14,12 @@ def test_add_product(session):
     assert product.last_price is None
 
 
+def test_add_product_with_selector(session):
+    product = repo.add_product(session, "https://shop.test/a", "shop.test", price_selector=".price")
+
+    assert product.price_selector == ".price"
+
+
 def test_get_product_by_url(session):
     repo.add_product(session, "https://shop.test/a", "shop.test")
 

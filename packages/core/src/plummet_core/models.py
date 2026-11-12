@@ -23,6 +23,8 @@ class Product(Base):
     store: Mapped[str] = mapped_column(String(100))
     name: Mapped[str | None] = mapped_column(String(300))
     currency: Mapped[str] = mapped_column(String(3), default="USD")
+    # Optional CSS selector for stores where we cannot find the price alone
+    price_selector: Mapped[str | None] = mapped_column(String(300))
     target_cents: Mapped[int | None]
     last_price_cents: Mapped[int | None]
     alerts_enabled: Mapped[bool] = mapped_column(default=True)

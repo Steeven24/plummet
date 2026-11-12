@@ -17,12 +17,14 @@ def add_product(
     target_price: Decimal | None = None,
     name: str | None = None,
     currency: str = "USD",
+    price_selector: str | None = None,
 ) -> Product:
     product = Product(
         url=url,
         store=store,
         name=name,
         currency=currency,
+        price_selector=price_selector,
         target_cents=None if target_price is None else to_cents(target_price),
     )
     session.add(product)
