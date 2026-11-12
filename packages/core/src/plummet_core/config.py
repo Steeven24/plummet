@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     # Scheduler
     check_interval_minutes: int = Field(default=30, ge=5)
 
+    # Alerts: send one when the price goes down at least this percent
+    min_drop_percent: float = Field(default=5.0, gt=0, le=100)
+
     # Logging
     log_level: str = "INFO"
 

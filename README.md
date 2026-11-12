@@ -56,6 +56,7 @@ cp .env.example .env
 | `PLUMMET_REQUEST_TIMEOUT` | `15` | Seconds to wait for a store page |
 | `PLUMMET_MAX_RETRIES` | `3` | Tries before a check fails |
 | `PLUMMET_CHECK_INTERVAL_MINUTES` | `30` | Time between checks (min. 5) |
+| `PLUMMET_MIN_DROP_PERCENT` | `5` | Price drop (%) that sends an alert |
 | `PLUMMET_LOG_LEVEL` | `INFO` | How much detail the logs show |
 
 Telegram alerts only work when both the token and the chat ID are set.
