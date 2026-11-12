@@ -96,3 +96,20 @@ these ways in order. It uses the first one that finds a price:
 
 It understands prices like `$1,299.99`, `1.299,99 €` or `$ 2.549`, and it
 finds the currency when it is clear (`US$`, `R$`, `€`, `MXN`...).
+
+## When you get an alert
+
+`plummet_core.checker.check_all()` checks every product, saves the new
+price and decides if it is good news. There are two kinds of alerts:
+
+| Alert | When |
+|---|---|
+| `below_target` | The price goes to or under your target price |
+| `price_drop` | The price goes down at least `PLUMMET_MIN_DROP_PERCENT` since the last check |
+
+To avoid spam, `below_target` is sent only once, when the price crosses
+the target. If the price stays under the target, you only get a new alert
+when it drops a lot again. You can turn off alerts for each product.
+
+If a product fails (page not found, no price...), the error is saved on
+the product and the other products are still checked.
