@@ -1,0 +1,6 @@
+# Plummet: check prices every 30 minutes.
+# Run `uv run plummet-worker cron` to get this line with your own paths
+# and your PLUMMET_CHECK_INTERVAL_MINUTES, then add it with `crontab -e`.
+#
+# min  hour  day  month  weekday  command
+*/30   *     *    *      *        /path/to/plummet/deploy/run-worker.sh >> /path/to/plummet/logs/cron.log 2>&1
