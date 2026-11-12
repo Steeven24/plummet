@@ -82,3 +82,16 @@ each time: 1s, 2s, 4s... If the store sends a `Retry-After` header, it
 waits that time instead (max 30s). Errors like `404` fail at once.
 
 Please be polite with stores: do not check the same product too often.
+
+## How prices are found
+
+`plummet_core.parsing.parse_product()` reads the page HTML and tries
+these ways in order. It uses the first one that finds a price:
+
+1. A CSS selector you give for the product (optional)
+2. JSON-LD data (`schema.org/Product`), which many stores add for Google
+3. Meta tags (`product:price:amount`) and microdata (`itemprop="price"`)
+4. Built-in selectors for known stores: Amazon, Mercado Libre and eBay
+
+It understands prices like `$1,299.99`, `1.299,99 €` or `$ 2.549`, and it
+finds the currency when it is clear (`US$`, `R$`, `€`, `MXN`...).
