@@ -23,9 +23,13 @@ def setup_logging(level: str = "INFO", log_file: Path | None = None) -> None:
 
     root = logging.getLogger()
     root.setLevel(level.upper())
+    # Remove only our old handlers, so we do not break handlers added by other tools.
     for handler in root.handlers[:]:
-        root.removeHandler(handler)
+        if getattr(handler, "plummet", False):
+            root.removeHandler(handler)
+            handler.close()
     for handler in handlers:
+        handler.plummet = True  # type: ignore[attr-defined]
         handler.setFormatter(formatter)
         root.addHandler(handler)
 
