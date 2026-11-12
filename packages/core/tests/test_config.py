@@ -18,6 +18,7 @@ def test_default_values():
     assert settings.database_url == "sqlite:///data/plummet.db"
     assert settings.max_retries == 3
     assert settings.check_interval_minutes == 30
+    assert settings.min_drop_percent == 5.0
     assert settings.telegram_enabled is False
 
 
