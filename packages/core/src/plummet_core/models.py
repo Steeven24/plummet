@@ -64,3 +64,20 @@ class PriceRecord(Base):
     @property
     def price(self) -> Decimal:
         return from_cents(self.price_cents)
+
+
+class CheckRun(Base):
+    """One round of checks. The dashboard uses it to show how the cron job is doing."""
+
+    __tablename__ = "check_runs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    started_at: Mapped[datetime] = mapped_column(default=utc_now, index=True)
+    seconds: Mapped[float] = mapped_column(default=0.0)
+    checked: Mapped[int] = mapped_column(default=0)
+    alerts: Mapped[int] = mapped_column(default=0)
+    errors: Mapped[int] = mapped_column(default=0)
+
+    @property
+    def ok(self) -> int:
+        return self.checked - self.errors
