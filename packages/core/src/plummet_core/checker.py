@@ -1,7 +1,8 @@
 """Check the price of products: download, parse, save and find alerts."""
 
 import logging
-from dataclasses import dataclass
+import time
+from dataclasses import dataclass, field
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
@@ -61,3 +62,46 @@ def check_product(
         alert = None
     logger.info("%s → %s %s", product.store, parsed.price, product.currency)
     return CheckResult(product.id, price=parsed.price, alert=alert)
+
+
+@dataclass
+class CheckSummary:
+    """The result of one round of checks."""
+
+    results: list[CheckResult] = field(default_factory=list)
+    seconds: float = 0.0
+
+    @property
+    def alerts(self) -> list[CheckResult]:
+        return [r for r in self.results if r.alert]
+
+    @property
+    def errors(self) -> list[CheckResult]:
+        return [r for r in self.results if not r.ok]
+
+
+def check_all(
+    session: Session,
+    fetcher: Fetcher,
+    settings: Settings | None = None,
+) -> CheckSummary:
+    """Check every product. One broken product does not stop the others."""
+    start = time.monotonic()
+    summary = CheckSummary()
+    products = repo.list_products(session)
+    logger.info("Starting round · %d products", len(products))
+    for product in products:
+        try:
+            summary.results.append(check_product(session, product, fetcher, settings))
+        except Exception as error:
+            logger.exception("Unexpected error with product %s", product.id)
+            repo.record_error(session, product, f"Unexpected error: {error}")
+            summary.results.append(CheckResult(product.id, error=str(error)))
+    summary.seconds = round(time.monotonic() - start, 2)
+    logger.info(
+        "Round done in %ss · %d alerts · %d errors",
+        summary.seconds,
+        len(summary.alerts),
+        len(summary.errors),
+    )
+    return summary
