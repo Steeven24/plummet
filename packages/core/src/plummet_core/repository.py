@@ -6,7 +6,7 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from plummet_core.models import CheckRun, PriceRecord, Product, utc_now
+from plummet_core.models import CheckRun, PriceRecord, Product, SentAlert, utc_now
 from plummet_core.money import to_cents
 
 
@@ -116,4 +116,26 @@ def recent_runs(session: Session, days: int = 7) -> list[CheckRun]:
     since = utc_now() - timedelta(days=days)
     newest_first = CheckRun.started_at.desc()
     query = select(CheckRun).where(CheckRun.started_at >= since).order_by(newest_first)
+    return list(session.scalars(query))
+
+
+def save_alert(
+    session: Session,
+    product: Product,
+    kind: str,
+    text: str,
+    delivered: bool,
+    error: str | None = None,
+) -> SentAlert:
+    alert = SentAlert(product_id=product.id, kind=kind, text=text, delivered=delivered, error=error)
+    session.add(alert)
+    session.flush()
+    return alert
+
+
+def recent_alerts(session: Session, days: int = 7) -> list[SentAlert]:
+    """Return the alerts of the last days, newest first."""
+    since = utc_now() - timedelta(days=days)
+    newest_first = SentAlert.created_at.desc()
+    query = select(SentAlert).where(SentAlert.created_at >= since).order_by(newest_first)
     return list(session.scalars(query))

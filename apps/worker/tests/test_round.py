@@ -31,3 +31,27 @@ def test_run_round_saves_prices_and_the_round(tmp_path):
         assert product.last_price == Decimal("9.50")
         assert len(runs) == 1
         assert (runs[0].checked, runs[0].alerts, runs[0].errors) == (1, 1, 0)
+
+
+class FakeTelegram:
+    def __init__(self):
+        self.sent = []
+
+    def send_message(self, text):
+        self.sent.append(text)
+
+
+def test_run_round_sends_alerts(tmp_path):
+    engine = make_engine(f"sqlite:///{tmp_path / 'test.db'}")
+    init_db(engine)
+    settings = Settings(max_retries=0)
+    with session_scope(engine) as session:
+        repo.add_product(session, "https://shop.test/a", "shop.test", target_price=Decimal("10"))
+    telegram = FakeTelegram()
+
+    run_round(engine, settings, fetcher=fake_fetcher(settings), telegram=telegram)
+
+    assert len(telegram.sent) == 1
+    assert "Price under your target" in telegram.sent[0]
+    with session_scope(engine) as session:
+        assert repo.recent_alerts(session)[0].delivered is True
