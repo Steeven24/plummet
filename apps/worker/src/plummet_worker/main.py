@@ -10,6 +10,7 @@ from plummet_core import repository as repo
 from plummet_core.config import get_settings
 from plummet_core.db import init_db, make_engine, session_scope
 from plummet_core.parsing import store_name
+from plummet_core.telegram import TelegramClient
 from plummet_worker.cron import crontab_line
 from plummet_worker.lock import AlreadyRunning, RunLock
 from plummet_worker.logs import setup_logging
@@ -21,14 +22,18 @@ logger = logging.getLogger("plummet.worker")
 def cmd_run(args: argparse.Namespace) -> int:
     settings = get_settings()
     setup_logging(settings.log_level, args.log_file)
+    telegram = TelegramClient.from_settings(settings)
     try:
         with RunLock(args.lock_file):
             engine = make_engine()
             init_db(engine)
-            summary = run_round(engine, settings)
+            summary = run_round(engine, settings, telegram=telegram)
     except AlreadyRunning as error:
         logger.info("%s. Skipping this round.", error)
         return 0
+    finally:
+        if telegram is not None:
+            telegram.close()
     all_failed = bool(summary.results) and len(summary.errors) == len(summary.results)
     return 1 if all_failed else 0
 
