@@ -6,7 +6,7 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from plummet_core.models import PriceRecord, Product, utc_now
+from plummet_core.models import CheckRun, PriceRecord, Product, utc_now
 from plummet_core.money import to_cents
 
 
@@ -91,4 +91,29 @@ def price_history(session: Session, product_id: int, days: int = 30) -> list[Pri
         .where(PriceRecord.product_id == product_id, PriceRecord.checked_at >= since)
         .order_by(PriceRecord.checked_at)
     )
+    return list(session.scalars(query))
+
+
+def record_run(
+    session: Session,
+    started_at: datetime,
+    seconds: float,
+    checked: int,
+    alerts: int,
+    errors: int,
+) -> CheckRun:
+    """Save the result of one round of checks."""
+    run = CheckRun(
+        started_at=started_at, seconds=seconds, checked=checked, alerts=alerts, errors=errors
+    )
+    session.add(run)
+    session.flush()
+    return run
+
+
+def recent_runs(session: Session, days: int = 7) -> list[CheckRun]:
+    """Return the rounds of the last days, newest first."""
+    since = utc_now() - timedelta(days=days)
+    newest_first = CheckRun.started_at.desc()
+    query = select(CheckRun).where(CheckRun.started_at >= since).order_by(newest_first)
     return list(session.scalars(query))

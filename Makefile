@@ -1,4 +1,4 @@
-.PHONY: install test lint format
+.PHONY: install test lint format check-prices
 
 install: ## Install all Python packages
 	uv sync --all-packages
@@ -13,3 +13,6 @@ lint: ## Check code style
 format: ## Fix code style
 	uv run ruff check --fix .
 	uv run ruff format .
+
+check-prices: ## Check all product prices once
+	uv run plummet-worker run

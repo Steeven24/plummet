@@ -26,6 +26,7 @@ plummet/
 │   └── worker/    # Runs the price checks with cron
 ├── packages/
 │   └── core/      # Shared code: database, scrapers, price logic
+├── deploy/        # Cron script and examples
 └── Makefile       # Common commands
 ```
 
@@ -70,6 +71,7 @@ The file is created at `data/plummet.db` the first time the app runs.
 |---|---|
 | `products` | The URL, store, target price and last price of each product |
 | `price_records` | Every price found for a product, with the date |
+| `check_runs` | Each round of checks: time, seconds, alerts and errors |
 
 Prices are saved as whole cents (for example `1999` for `19.99`)
 to avoid rounding problems. All dates are in UTC.
@@ -113,3 +115,31 @@ when it drops a lot again. You can turn off alerts for each product.
 
 If a product fails (page not found, no price...), the error is saved on
 the product and the other products are still checked.
+
+## Run the checks with cron
+
+The worker app checks all products once and stops. Cron runs it again
+and again.
+
+```bash
+# Add a product (the Telegram bot will do this later)
+uv run plummet-worker add "https://www.amazon.com/dp/B0..." --target 79.99
+
+# Check all prices once
+make check-prices
+
+# Print the line for your crontab, with your paths and interval
+uv run plummet-worker cron
+```
+
+Then run `crontab -e` and paste the line. It looks like this:
+
+```
+*/30 * * * * /path/to/plummet/deploy/run-worker.sh >> /path/to/plummet/logs/cron.log 2>&1
+```
+
+- Logs are saved in `logs/worker.log` (max 1 MB, 5 old files are kept).
+- If a round is still running when cron starts the next one, the new one
+  is skipped. A lock file in `data/worker.lock` controls this.
+- Each round is saved in the `check_runs` table: time, seconds, products
+  checked, alerts and errors. The dashboard will use it.
