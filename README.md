@@ -72,6 +72,7 @@ The file is created at `data/plummet.db` the first time the app runs.
 | `products` | The URL, store, target price and last price of each product |
 | `price_records` | Every price found for a product, with the date |
 | `check_runs` | Each round of checks: time, seconds, alerts and errors |
+| `sent_alerts` | Every alert message and if Telegram got it |
 
 Prices are saved as whole cents (for example `1999` for `19.99`)
 to avoid rounding problems. All dates are in UTC.
@@ -115,6 +116,31 @@ when it drops a lot again. You can turn off alerts for each product.
 
 If a product fails (page not found, no price...), the error is saved on
 the product and the other products are still checked.
+
+## Set up Telegram alerts
+
+1. Open Telegram, talk to [@BotFather](https://t.me/BotFather) and send `/newbot`.
+   It gives you a token like `123456:ABC-DEF...`.
+2. Send any message to your new bot.
+3. Open `https://api.telegram.org/bot<TOKEN>/getUpdates` in your browser and
+   copy the number in `"chat":{"id": ...}`. This is your chat ID.
+4. Add both values to your `.env` file:
+
+   ```bash
+   PLUMMET_TELEGRAM_BOT_TOKEN=123456:ABC-DEF...
+   PLUMMET_TELEGRAM_CHAT_ID=987654321
+   ```
+
+5. Check that it works:
+
+   ```bash
+   uv run plummet-worker test-telegram
+   ```
+
+After each round, the worker sends one message per alert. Every alert is
+also saved in the `sent_alerts` table, even when Telegram fails, so you
+can see it later in the dashboard. Keep your token secret: Plummet never
+writes it in the logs.
 
 ## Run the checks with cron
 
