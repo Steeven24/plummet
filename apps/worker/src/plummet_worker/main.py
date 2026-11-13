@@ -10,7 +10,7 @@ from plummet_core import repository as repo
 from plummet_core.config import get_settings
 from plummet_core.db import init_db, make_engine, session_scope
 from plummet_core.parsing import store_name
-from plummet_core.telegram import TelegramClient
+from plummet_core.telegram import TelegramClient, TelegramError
 from plummet_worker.cron import crontab_line
 from plummet_worker.lock import AlreadyRunning, RunLock
 from plummet_worker.logs import setup_logging
@@ -59,6 +59,22 @@ def cmd_cron(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_test_telegram(args: argparse.Namespace) -> int:
+    telegram = TelegramClient.from_settings(get_settings())
+    if telegram is None:
+        print("Set PLUMMET_TELEGRAM_BOT_TOKEN and PLUMMET_TELEGRAM_CHAT_ID first.")
+        return 1
+    try:
+        telegram.send_message("✅ <b>Plummet is connected.</b> You will get price alerts here.")
+    except TelegramError as error:
+        print(f"Could not send the message: {error}")
+        return 1
+    finally:
+        telegram.close()
+    print("Message sent. Check your Telegram.")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="plummet-worker", description="Check product prices.")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -76,6 +92,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     cron = commands.add_parser("cron", help="print the line to add with `crontab -e`")
     cron.set_defaults(func=cmd_cron)
+
+    test = commands.add_parser("test-telegram", help="send a test message to Telegram")
+    test.set_defaults(func=cmd_test_telegram)
 
     return parser
 

@@ -44,3 +44,10 @@ def test_cron_prints_line(capsys, monkeypatch):
     main(["cron"])
 
     assert capsys.readouterr().out.startswith("*/15 * * * * ")
+
+
+def test_test_telegram_without_settings(capsys, monkeypatch):
+    monkeypatch.delenv("PLUMMET_TELEGRAM_BOT_TOKEN", raising=False)
+
+    assert main(["test-telegram"]) == 1
+    assert "Set PLUMMET_TELEGRAM_BOT_TOKEN" in capsys.readouterr().out
