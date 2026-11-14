@@ -4,7 +4,7 @@ These functions do not know about Telegram. They get the command words and
 return the answer text, so they are easy to test.
 """
 
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from html import escape
 from urllib.parse import urlparse
 
@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from plummet_core import repository as repo
 from plummet_core.parsing import store_name
+from plummet_core.parsing.price_text import parse_price_text
 
 HELP_TEXT = """<b>Plummet</b> tracks prices and tells you when they go down.
 
@@ -28,12 +29,10 @@ class CommandError(Exception):
 
 
 def parse_price(text: str) -> Decimal:
-    try:
-        price = Decimal(text.replace(",", "."))
-    except InvalidOperation:
-        raise CommandError(f"“{escape(text)}” is not a valid price. Example: 99.90") from None
-    if price <= 0:
-        raise CommandError("The price must be more than 0.")
+    """Read prices like 99.90, 1,299.99 or 1.299,99."""
+    price = parse_price_text(text)
+    if price is None:
+        raise CommandError(f"“{escape(text)}” is not a valid price. Example: 99.90")
     return price
 
 
