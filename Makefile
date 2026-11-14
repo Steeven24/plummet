@@ -1,4 +1,4 @@
-.PHONY: install test lint format check-prices
+.PHONY: install test lint format check-prices bot
 
 install: ## Install all Python packages
 	uv sync --all-packages
@@ -16,3 +16,6 @@ format: ## Fix code style
 
 check-prices: ## Check all product prices once
 	uv run plummet-worker run
+
+bot: ## Start the Telegram bot
+	uv run plummet-bot
