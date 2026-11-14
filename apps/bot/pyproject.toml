@@ -3,7 +3,10 @@ name = "plummet-bot"
 version = "0.1.0"
 description = "Telegram bot that sends price alerts"
 requires-python = ">=3.12"
-dependencies = ["plummet-core"]
+dependencies = [
+    "plummet-core",
+    "python-telegram-bot>=21.0",
+]
 
 [tool.uv.sources]
 plummet-core = { workspace = true }
