@@ -3,7 +3,10 @@ name = "plummet-bot"
 version = "0.1.0"
 description = "Telegram bot that sends price alerts"
 requires-python = ">=3.12"
-dependencies = ["plummet-core"]
+dependencies = [
+    "plummet-core",
+    "python-telegram-bot>=21.0",
+]
 
 [tool.uv.sources]
 plummet-core = { workspace = true }
@@ -14,3 +17,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/plummet_bot"]
+
+[project.scripts]
+plummet-bot = "plummet_bot.main:main"
