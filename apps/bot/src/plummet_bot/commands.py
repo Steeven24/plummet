@@ -82,3 +82,44 @@ def list_command(session: Session) -> str:
     lines = [f"📦 <b>Your products ({len(products)})</b>", ""]
     lines += [product_line(p) for p in products]
     return "\n".join(lines)
+
+
+def find_product(session: Session, text: str) -> Product:
+    """Get a product by the id the user wrote."""
+    if not text.isdigit():
+        raise CommandError(f"“{escape(text)}” is not a product id. See /list.")
+    product = repo.get_product(session, int(text))
+    if product is None:
+        raise CommandError(f"There is no product with id {text}. See /list.")
+    return product
+
+
+def remove_command(session: Session, args: list[str]) -> str:
+    if len(args) != 1:
+        raise CommandError("Usage: /remove <i>id</i>")
+    product = find_product(session, args[0])
+    name = escape(product.name or product.store)
+    repo.delete_product(session, product.id)
+    return f"🗑 Stopped tracking {name}."
+
+
+def target_command(session: Session, args: list[str]) -> str:
+    if len(args) != 2:
+        raise CommandError("Usage: /target <i>id</i> <i>price</i> (or “none” to remove it)")
+    product = find_product(session, args[0])
+    if args[1].lower() == "none":
+        repo.set_target_price(session, product, None)
+        return f"Target removed for product {product.id}."
+    target = parse_price(args[1])
+    repo.set_target_price(session, product, target)
+    return f"🎯 New target for product {product.id}: {format_price(target, product.currency)}"
+
+
+def alerts_command(session: Session, args: list[str]) -> str:
+    if len(args) != 2 or args[1].lower() not in ("on", "off"):
+        raise CommandError("Usage: /alerts <i>id</i> on|off")
+    product = find_product(session, args[0])
+    product.alerts_enabled = args[1].lower() == "on"
+    session.flush()
+    state = "on 🔔" if product.alerts_enabled else "off 🔕"
+    return f"Alerts for product {product.id} are {state}."
