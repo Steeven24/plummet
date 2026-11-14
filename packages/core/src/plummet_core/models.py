@@ -37,6 +37,7 @@ class Product(Base):
         cascade="all, delete-orphan",
         order_by="PriceRecord.checked_at",
     )
+    alerts: Mapped[list["SentAlert"]] = relationship(cascade="all, delete-orphan")
 
     @property
     def target_price(self) -> Decimal | None:
@@ -81,3 +82,19 @@ class CheckRun(Base):
     @property
     def ok(self) -> int:
         return self.checked - self.errors
+
+
+class SentAlert(Base):
+    """An alert message. We save it even when Telegram fails, to show it in the dashboard."""
+
+    __tablename__ = "sent_alerts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE"), index=True
+    )
+    kind: Mapped[str] = mapped_column(String(20))
+    text: Mapped[str] = mapped_column(String(2000))
+    delivered: Mapped[bool] = mapped_column(default=False)
+    error: Mapped[str | None] = mapped_column(String(500))
+    created_at: Mapped[datetime] = mapped_column(default=utc_now, index=True)
