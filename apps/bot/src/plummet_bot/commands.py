@@ -11,6 +11,8 @@ from urllib.parse import urlparse
 from sqlalchemy.orm import Session
 
 from plummet_core import repository as repo
+from plummet_core.messages import format_price
+from plummet_core.models import Product
 from plummet_core.parsing import store_name
 from plummet_core.parsing.price_text import parse_price_text
 
@@ -56,3 +58,27 @@ def add_command(session: Session, args: list[str]) -> str:
     if target is not None:
         text += f"\nI will tell you when it costs {target:,.2f} or less."
     return text + "\nThe first check runs in the next round."
+
+
+def product_line(product: Product) -> str:
+    """Show one product in two or three short lines."""
+    name = escape(product.name or product.store)
+    bell = "🔔" if product.alerts_enabled else "🔕"
+    price = format_price(product.last_price, product.currency)
+    if product.last_price is None:
+        price = "waiting for first check"
+    lines = [f'<b>{product.id}.</b> <a href="{escape(product.url, quote=True)}">{name}</a>']
+    details = f"   {price} · target {format_price(product.target_price)} · {bell}"
+    lines.append(details)
+    if product.last_error:
+        lines.append(f"   ⚠️ Last check failed: {escape(product.last_error[:80])}")
+    return "\n".join(lines)
+
+
+def list_command(session: Session) -> str:
+    products = repo.list_products(session)
+    if not products:
+        return "You do not track any product yet.\nSend /add <i>url</i> to start."
+    lines = [f"📦 <b>Your products ({len(products)})</b>", ""]
+    lines += [product_line(p) for p in products]
+    return "\n".join(lines)
