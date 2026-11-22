@@ -41,6 +41,11 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
 
+    # API for the web dashboard
+    api_host: str = "127.0.0.1"
+    api_port: int = 8000
+    cors_origins: list[str] = ["http://localhost:5173"]
+
     @property
     def telegram_enabled(self) -> bool:
         """True when the bot has a token and a chat to send messages to."""
