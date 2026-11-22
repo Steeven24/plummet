@@ -21,7 +21,7 @@ the code in `packages/core`.
 ```
 plummet/
 ├── apps/
-│   ├── api/       # REST API for the web dashboard
+│   ├── api/       # REST API (FastAPI) for the web dashboard
 │   ├── bot/       # Telegram bot to manage your products
 │   └── worker/    # Runs the price checks with cron
 ├── packages/
@@ -162,6 +162,29 @@ make bot
 The bot is private: it only answers the chat in `PLUMMET_TELEGRAM_CHAT_ID`
 and ignores everybody else. It must keep running to answer commands, but
 alerts are sent by the worker, so they work even when the bot is stopped.
+
+## API
+
+The API gives the data to the web dashboard. Start it with:
+
+```bash
+make api
+```
+
+It runs on `http://127.0.0.1:8000`. Open `http://127.0.0.1:8000/docs`
+to see all routes and try them in the browser.
+
+| Method | Route | What it does |
+|---|---|---|
+| `GET` | `/api/health` | Check that the API is running |
+| `GET` | `/api/products` | List all products |
+| `POST` | `/api/products` | Add a product: `{"url": "...", "target_price": "79.99"}` |
+| `GET` | `/api/products/{id}` | Get one product |
+| `PATCH` | `/api/products/{id}` | Change `target_price`, `alerts_enabled` or `price_selector` |
+| `DELETE` | `/api/products/{id}` | Stop tracking a product |
+
+The API has no login, so by default it only listens on `127.0.0.1`.
+Do not open it to the internet.
 
 ## Run the checks with cron
 
