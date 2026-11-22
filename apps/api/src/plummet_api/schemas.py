@@ -30,6 +30,16 @@ class ProductOut(BaseModel):
     last_checked_at: UtcDatetime | None
     last_error: str | None
     created_at: UtcDatetime
+    # Filled only in the product list: one price per day and the change in 7 days (%)
+    trend: list[float] = []
+    change_7d: float | None = None
+
+
+class PricePoint(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    checked_at: UtcDatetime
+    price: float
 
 
 class ProductCreate(BaseModel):

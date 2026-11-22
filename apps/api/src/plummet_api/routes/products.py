@@ -2,14 +2,15 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from plummet_api.deps import get_session
-from plummet_api.schemas import ProductCreate, ProductOut, ProductUpdate
+from plummet_api.schemas import PricePoint, ProductCreate, ProductOut, ProductUpdate
 from plummet_core import repository as repo
 from plummet_core.models import Product
 from plummet_core.parsing import store_name
+from plummet_core.stats import change_in_days, daily_prices
 
 router = APIRouter(prefix="/api/products", tags=["products"])
 SessionDep = Annotated[Session, Depends(get_session)]
@@ -22,9 +23,17 @@ def get_or_404(session: Session, product_id: int) -> Product:
     return product
 
 
+def with_stats(session: Session, product: Product) -> ProductOut:
+    records = repo.price_history(session, product.id, days=30)
+    out = ProductOut.model_validate(product)
+    out.trend = [float(price) for _, price in daily_prices(records)]
+    out.change_7d = change_in_days(records, days=7)
+    return out
+
+
 @router.get("", response_model=list[ProductOut])
 def list_products(session: SessionDep):
-    return repo.list_products(session)
+    return [with_stats(session, product) for product in repo.list_products(session)]
 
 
 @router.post("", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
@@ -40,6 +49,12 @@ def add_product(data: ProductCreate, session: SessionDep):
 @router.get("/{product_id}", response_model=ProductOut)
 def get_product(product_id: int, session: SessionDep):
     return get_or_404(session, product_id)
+
+
+@router.get("/{product_id}/history", response_model=list[PricePoint])
+def price_history(product_id: int, session: SessionDep, days: int = Query(30, ge=1, le=365)):
+    get_or_404(session, product_id)
+    return repo.price_history(session, product_id, days=days)
 
 
 @router.patch("/{product_id}", response_model=ProductOut)
