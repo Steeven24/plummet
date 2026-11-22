@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import Engine
 
-from plummet_api.routes import dashboard, products
+from plummet_api.routes import cron, dashboard, products
 from plummet_core.config import Settings, get_settings
 from plummet_core.db import init_db, make_engine
 
@@ -31,4 +31,5 @@ def create_app(engine: Engine | None = None, settings: Settings | None = None) -
 
     app.include_router(products.router)
     app.include_router(dashboard.router)
+    app.include_router(cron.router)
     return app
