@@ -22,7 +22,7 @@ the code in `packages/core`.
 plummet/
 ├── apps/
 │   ├── api/       # REST API for the web dashboard
-│   ├── bot/       # Telegram bot that sends alerts
+│   ├── bot/       # Telegram bot to manage your products
 │   └── worker/    # Runs the price checks with cron
 ├── packages/
 │   └── core/      # Shared code: database, scrapers, price logic
@@ -142,13 +142,34 @@ also saved in the `sent_alerts` table, even when Telegram fails, so you
 can see it later in the dashboard. Keep your token secret: Plummet never
 writes it in the logs.
 
+## Use the Telegram bot
+
+The bot lets you manage your products from the chat. Start it with:
+
+```bash
+make bot
+```
+
+| Command | What it does |
+|---|---|
+| `/add <url> [target]` | Track a product, for example `/add https://... 79.99` |
+| `/list` | See your products, last price, target and alerts |
+| `/target <id> <price>` | Change the target price (`none` removes it) |
+| `/alerts <id> on\|off` | Turn alerts on or off for a product |
+| `/remove <id>` | Stop tracking a product |
+| `/help` | Show all commands |
+
+The bot is private: it only answers the chat in `PLUMMET_TELEGRAM_CHAT_ID`
+and ignores everybody else. It must keep running to answer commands, but
+alerts are sent by the worker, so they work even when the bot is stopped.
+
 ## Run the checks with cron
 
 The worker app checks all products once and stops. Cron runs it again
 and again.
 
 ```bash
-# Add a product (the Telegram bot will do this later)
+# Add a product (you can also use /add in the Telegram bot)
 uv run plummet-worker add "https://www.amazon.com/dp/B0..." --target 79.99
 
 # Check all prices once
