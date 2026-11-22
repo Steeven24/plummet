@@ -1,4 +1,4 @@
-.PHONY: install test lint format check-prices bot
+.PHONY: install test lint format check-prices bot api
 
 install: ## Install all Python packages
 	uv sync --all-packages
@@ -19,3 +19,6 @@ check-prices: ## Check all product prices once
 
 bot: ## Start the Telegram bot
 	uv run plummet-bot
+
+api: ## Start the API for the web dashboard
+	uv run plummet-api
