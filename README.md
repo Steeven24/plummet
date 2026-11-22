@@ -25,6 +25,7 @@ plummet/
 ├── apps/
 │   ├── api/       # REST API (FastAPI) for the web dashboard
 │   ├── bot/       # Telegram bot to manage your products
+│   ├── web/       # Web dashboard (React + Vite + TypeScript)
 │   └── worker/    # Runs the price checks with cron
 ├── packages/
 │   └── core/      # Shared code: database, scrapers, price logic
@@ -35,7 +36,7 @@ plummet/
 
 ## Getting started
 
-You need Python 3.12 and [uv](https://docs.astral.sh/uv/).
+You need Python 3.12, [uv](https://docs.astral.sh/uv/) and Node.js 20 or newer.
 
 ```bash
 make install   # install all packages
@@ -198,6 +199,23 @@ and `change_7d` (price change in the last 7 days, in %).
 
 The API has no login, so by default it only listens on `127.0.0.1`.
 Do not open it to the internet.
+
+## Web dashboard
+
+The dashboard is in `apps/web`. Start the API and the dashboard in two terminals:
+
+```bash
+make api   # terminal 1
+make web   # terminal 2
+```
+
+Then open http://localhost:5173. In development, Vite sends `/api` calls
+to the API, so you do not need to set up CORS.
+
+- Fonts: Onest for text and JetBrains Mono for numbers. They are part of
+  the app, so the dashboard does not load anything from Google.
+- Light and dark theme. By default it follows your system.
+- Data refreshes every minute.
 
 ## Run the checks with cron
 
