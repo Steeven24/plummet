@@ -54,3 +54,27 @@ class ProductUpdate(BaseModel):
     target_price: Decimal | None = Field(default=None, gt=0)
     alerts_enabled: bool | None = None
     price_selector: str | None = Field(default=None, max_length=300)
+
+
+class Overview(BaseModel):
+    """The numbers at the top of the dashboard."""
+
+    products: int
+    stores: int
+    below_target: int
+    alerts_week: int
+    alerts_today: int
+    savings: float
+    # Only set when all products use the same currency
+    currency: str | None
+
+
+class AlertOut(BaseModel):
+    id: int
+    product_id: int
+    product_name: str
+    kind: str
+    text: str
+    delivered: bool
+    error: str | None
+    created_at: UtcDatetime
