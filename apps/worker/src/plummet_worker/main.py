@@ -21,7 +21,7 @@ logger = logging.getLogger("plummet.worker")
 
 def cmd_run(args: argparse.Namespace) -> int:
     settings = get_settings()
-    setup_logging(settings.log_level, args.log_file)
+    setup_logging(settings.log_level, args.log_file or settings.worker_log_file)
     telegram = TelegramClient.from_settings(settings)
     try:
         with RunLock(args.lock_file):
@@ -80,7 +80,7 @@ def build_parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True)
 
     run = commands.add_parser("run", help="check all products once")
-    run.add_argument("--log-file", type=Path, default=Path("logs/worker.log"))
+    run.add_argument("--log-file", type=Path, help="default: PLUMMET_WORKER_LOG_FILE")
     run.add_argument("--lock-file", type=Path, default=Path("data/worker.lock"))
     run.set_defaults(func=cmd_run)
 
