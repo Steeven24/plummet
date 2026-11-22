@@ -78,3 +78,25 @@ class AlertOut(BaseModel):
     delivered: bool
     error: str | None
     created_at: UtcDatetime
+
+
+class RunOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    started_at: UtcDatetime
+    seconds: float
+    checked: int
+    alerts: int
+    errors: int
+
+
+class CronStatus(BaseModel):
+    """The data of the "scheduled job" card."""
+
+    schedule: str
+    interval_minutes: int
+    last_run: RunOut | None
+    next_run_at: UtcDatetime | None
+    runs_week: int
+    success_rate: float | None
+    avg_seconds: float | None
