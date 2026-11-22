@@ -182,6 +182,14 @@ to see all routes and try them in the browser.
 | `GET` | `/api/products/{id}` | Get one product |
 | `PATCH` | `/api/products/{id}` | Change `target_price`, `alerts_enabled` or `price_selector` |
 | `DELETE` | `/api/products/{id}` | Stop tracking a product |
+| `GET` | `/api/products/{id}/history?days=30` | Price history of a product |
+| `GET` | `/api/overview` | Numbers for the top cards: products, alerts, savings |
+| `GET` | `/api/alerts?days=7` | Last alerts sent to Telegram |
+| `GET` | `/api/cron` | Cron schedule, last round, success rate, average time |
+| `GET` | `/api/cron/logs?lines=20` | Last lines of the worker log |
+
+`GET /api/products` also returns `trend` (one price per day, last 30 days)
+and `change_7d` (price change in the last 7 days, in %).
 
 The API has no login, so by default it only listens on `127.0.0.1`.
 Do not open it to the internet.
