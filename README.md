@@ -1,6 +1,7 @@
 # Plummet 🔻
 
 [![CI](https://github.com/Steeven24/plummet/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/Steeven24/plummet/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Plummet is a self-hosted price tracker. It checks online stores on a schedule
 and sends you a Telegram message when a price drops below your target.
@@ -309,3 +310,7 @@ Then run `crontab -e` and paste the line. It looks like this:
   is skipped. A lock file in `data/worker.lock` controls this.
 - Each round is saved in the `check_runs` table: time, seconds, products
   checked, alerts and errors. The dashboard will use it.
+
+## License
+
+[MIT](LICENSE) © 2026 Steeven24
