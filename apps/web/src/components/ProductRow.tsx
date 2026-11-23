@@ -18,7 +18,7 @@ export function ProductRow({ product, selected, onSelect }: Props) {
   const goingDown = trend.length > 1 && trend[trend.length - 1] <= trend[0];
 
   return (
-    <div className={`${styles.row} ${selected ? styles.selected : ""}`} role="row">
+    <div className={`${styles.row} ${selected ? styles.selected : ""}`}>
       <button
         type="button"
         className={styles.product}

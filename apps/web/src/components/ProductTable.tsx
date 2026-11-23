@@ -25,10 +25,10 @@ export function ProductTable({ products, selectedId, onSelect }: Props) {
         </p>
       ) : (
         <div className={styles.scroll}>
-          <div className={styles.table} role="table">
-            <div className={`${styles.row} ${styles.header}`} role="row">
+          <div className={styles.table}>
+            <div className={`${styles.row} ${styles.header}`}>
               {COLUMNS.map((column) => (
-                <span key={column} role="columnheader">{column}</span>
+                <span key={column}>{column}</span>
               ))}
             </div>
             {products.map((product) => (
