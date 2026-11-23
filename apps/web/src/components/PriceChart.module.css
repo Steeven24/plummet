@@ -1,0 +1,94 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 22px;
+}
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.name {
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.price {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 4px;
+  font-size: 26px;
+  font-weight: 500;
+}
+
+.change {
+  font-size: 13px;
+}
+
+.ranges {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+}
+
+.range {
+  padding: 5px 12px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 13px;
+  cursor: pointer;
+}
+.range[aria-pressed="true"] {
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.chart {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  height: 230px;
+}
+
+.axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-bottom: 22px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.dates {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.empty {
+  display: grid;
+  place-items: center;
+  height: 200px;
+  color: var(--muted);
+  text-align: center;
+}

@@ -1,14 +1,22 @@
+import { useState } from "react";
+
 import { Layout } from "./components/Layout";
+import { PageHeader } from "./components/PageHeader";
+import { PriceChart } from "./components/PriceChart";
+import { StatCards } from "./components/StatCards";
+import { useProducts } from "./hooks/queries";
 
 export function App() {
+  const { data: products = [] } = useProducts();
+  // The product table will change the selected product.
+  const [selectedId] = useState<number | null>(null);
+  const selected = products.find((p) => p.id === selectedId) ?? products[0] ?? null;
+
   return (
     <Layout>
-      <header id="overview">
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 500 }}>Overview</h1>
-        <p className="muted" style={{ margin: 0 }}>
-          Your tracked products and price alerts.
-        </p>
-      </header>
+      <PageHeader />
+      <StatCards />
+      <PriceChart product={selected} />
     </Layout>
   );
 }
