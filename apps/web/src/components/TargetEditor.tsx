@@ -3,6 +3,7 @@ import { type FormEvent, useState } from "react";
 import { useUpdateProduct } from "../hooks/mutations";
 import { formatPrice, parseAmount } from "../lib/format";
 import type { Product } from "../lib/types";
+import { CheckIcon } from "./Icons";
 
 /** Shows the target price. Click it to change it; leave it empty to remove it. */
 export function TargetEditor({ product }: { product: Product }) {
@@ -54,7 +55,7 @@ export function TargetEditor({ product }: { product: Product }) {
         />
       </label>
       <button className="btn btn-icon" type="submit" aria-label="Save target">
-        ✓
+        <CheckIcon />
       </button>
     </form>
   );
