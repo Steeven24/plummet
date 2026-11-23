@@ -3,6 +3,7 @@ name = "plummet"
 version = "1.0.0"
 description = "Self-hosted price tracker with Telegram alerts"
 readme = "README.md"
+license = "MIT"
 requires-python = ">=3.12"
 dependencies = []
 
