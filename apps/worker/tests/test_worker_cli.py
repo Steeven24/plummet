@@ -51,3 +51,13 @@ def test_test_telegram_without_settings(capsys, monkeypatch):
 
     assert main(["test-telegram"]) == 1
     assert "Set PLUMMET_TELEGRAM_BOT_TOKEN" in capsys.readouterr().out
+
+
+def test_loop_runs_rounds(temp_project, caplog, monkeypatch):
+    waits = []
+    monkeypatch.setattr("plummet_worker.main.time.sleep", waits.append)
+
+    assert main(["loop", "--rounds", "2"]) == 0
+    assert waits == [30 * 60]
+    assert caplog.text.count("Starting round") == 2
+    assert "Next round in 30 minutes" in caplog.text
