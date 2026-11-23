@@ -1,0 +1,22 @@
+.columns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.wide,
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.wide {
+  flex: 1 1 560px;
+}
+
+.side {
+  flex: 1 1 320px;
+}
