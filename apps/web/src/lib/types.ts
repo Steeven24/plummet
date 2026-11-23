@@ -30,6 +30,7 @@ export interface Overview {
   alerts_today: number;
   savings: number;
   currency: string | null;
+  telegram_enabled: boolean;
 }
 
 export interface SentAlert {

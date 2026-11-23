@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from plummet_api.deps import get_session
 from plummet_api.schemas import AlertOut, Overview
 from plummet_core import repository as repo
+from plummet_core.config import get_settings
 from plummet_core.models import Product, utc_now
 from plummet_core.stats import savings
 
@@ -39,6 +40,7 @@ def overview(session: SessionDep):
         alerts_today=sum(a.created_at.date() == today for a in alerts),
         savings=float(total_savings),
         currency=currencies.pop() if len(currencies) == 1 else None,
+        telegram_enabled=get_settings().telegram_enabled,
     )
 
 
