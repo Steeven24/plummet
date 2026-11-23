@@ -45,3 +45,21 @@ export function timeUntil(iso: string, now = new Date()): string {
 export function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
+
+/** Read what the user typed: "99.90", "99,90", "1,299.99" or "1.299,99". */
+export function parseAmount(text: string): number | null {
+  const clean = text.replace(/[^\d.,]/g, "");
+  if (!clean) return null;
+  const lastDot = clean.lastIndexOf(".");
+  const lastComma = clean.lastIndexOf(",");
+  const decimalMark = lastDot > lastComma ? "." : ",";
+  const parts = clean.split(decimalMark);
+  // A single mark with 3 digits after it is a thousands mark ("2.549").
+  const onlyThousands =
+    (lastDot === -1 || lastComma === -1) && parts.length === 2 && parts[1].length === 3;
+  const normal = onlyThousands
+    ? clean.replace(/[.,]/g, "")
+    : clean.replace(decimalMark === "." ? /,/g : /\./g, "").replace(",", ".");
+  const value = Number(normal);
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
