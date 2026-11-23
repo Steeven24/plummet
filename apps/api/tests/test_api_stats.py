@@ -41,6 +41,7 @@ def test_overview(client, engine):
     seed(engine)
 
     data = client.get("/api/overview").json()
+    data.pop("telegram_enabled")
 
     assert data == {
         "products": 2,

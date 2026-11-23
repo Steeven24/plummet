@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import styles from "./Layout.module.css";
+import { TelegramStatus } from "./TelegramStatus";
 import { ThemeToggle } from "./ThemeToggle";
 
 const SECTIONS = [
@@ -37,7 +38,8 @@ export function Layout({ children }: { children: ReactNode }) {
             </a>
           ))}
         </nav>
-        <div className={styles.footer}>
+        <div className={styles.footer} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <TelegramStatus />
           <ThemeToggle />
         </div>
       </aside>

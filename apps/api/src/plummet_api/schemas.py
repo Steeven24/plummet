@@ -67,6 +67,7 @@ class Overview(BaseModel):
     savings: float
     # Only set when all products use the same currency
     currency: str | None
+    telegram_enabled: bool = False
 
 
 class AlertOut(BaseModel):
