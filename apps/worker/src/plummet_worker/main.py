@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+import time
 from collections.abc import Sequence
 from decimal import Decimal
 from pathlib import Path
@@ -36,6 +37,22 @@ def cmd_run(args: argparse.Namespace) -> int:
             telegram.close()
     all_failed = bool(summary.results) and len(summary.errors) == len(summary.results)
     return 1 if all_failed else 0
+
+
+def cmd_loop(args: argparse.Namespace) -> int:
+    """Run a round, wait, and run again. For Docker, where there is no cron."""
+    minutes = get_settings().check_interval_minutes
+    done = 0
+    while True:
+        try:
+            cmd_run(args)
+        except Exception:
+            logger.exception("The round failed. Trying again in the next round.")
+        done += 1
+        if args.rounds is not None and done >= args.rounds:
+            return 0
+        logger.info("Next round in %d minutes", minutes)
+        time.sleep(minutes * 60)
 
 
 def cmd_add(args: argparse.Namespace) -> int:
@@ -80,9 +97,13 @@ def build_parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True)
 
     run = commands.add_parser("run", help="check all products once")
-    run.add_argument("--log-file", type=Path, help="default: PLUMMET_WORKER_LOG_FILE")
-    run.add_argument("--lock-file", type=Path, default=Path("data/worker.lock"))
+    loop = commands.add_parser("loop", help="check all products again and again (no cron)")
+    for command in (run, loop):
+        command.add_argument("--log-file", type=Path, help="default: PLUMMET_WORKER_LOG_FILE")
+        command.add_argument("--lock-file", type=Path, default=Path("data/worker.lock"))
     run.set_defaults(func=cmd_run)
+    loop.add_argument("--rounds", type=int, help=argparse.SUPPRESS)  # used by the tests
+    loop.set_defaults(func=cmd_loop)
 
     add = commands.add_parser("add", help="start tracking a product")
     add.add_argument("url")
