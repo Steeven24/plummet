@@ -29,7 +29,7 @@ plummet/
 │   └── worker/    # Runs the price checks with cron
 ├── packages/
 │   └── core/      # Shared code: database, scrapers, price logic
-├── deploy/        # Cron script and examples
+├── deploy/        # Cron script and Docker files
 ├── .github/       # CI workflow and PR template
 └── Makefile       # Common commands
 ```
@@ -216,6 +216,31 @@ to the API, so you do not need to set up CORS.
   the app, so the dashboard does not load anything from Google.
 - Light and dark theme. By default it follows your system.
 - Data refreshes every minute.
+
+## Run everything with Docker
+
+This is the easiest way to run Plummet on a server or on your computer.
+You only need Docker.
+
+```bash
+cp .env.example .env      # add your Telegram token and chat ID
+make up                   # or: docker compose up -d --build
+```
+
+Then open http://localhost:8080.
+
+| Service | What it does |
+|---|---|
+| `web` | The dashboard (nginx). It sends `/api` calls to the API |
+| `api` | The REST API |
+| `worker` | Checks prices again and again with `plummet-worker loop` (no cron needed) |
+| `bot` | The Telegram bot. Start it with `docker compose --profile bot up -d` |
+
+- The database and the logs are saved in Docker volumes, so `make down`
+  does not delete them.
+- The dashboard only listens on `127.0.0.1:8080`. The API has no login,
+  so do not open this port to the internet. Use a VPN or an SSH tunnel.
+- The containers do not run as root.
 
 ## Run the checks with cron
 
