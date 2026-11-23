@@ -1,0 +1,56 @@
+# Run all of Plummet with one command:  docker compose up -d --build
+# With the Telegram bot too:              docker compose --profile bot up -d --build
+#
+# The database and the logs are saved in the "plummet-data" and
+# "plummet-logs" volumes, so they are kept when the containers change.
+
+x-python: &python
+  build:
+    context: .
+    dockerfile: deploy/docker/python.Dockerfile
+  image: plummet-python
+  env_file:
+    - path: .env
+      required: false
+  volumes:
+    - plummet-data:/app/data
+    - plummet-logs:/app/logs
+  restart: unless-stopped
+
+services:
+  api:
+    <<: *python
+    command: ["plummet-api"]
+    environment:
+      PLUMMET_API_HOST: 0.0.0.0
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  worker:
+    <<: *python
+    command: ["plummet-worker", "loop"]
+
+  bot:
+    <<: *python
+    command: ["plummet-bot"]
+    profiles: ["bot"]
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/docker/web.Dockerfile
+    image: plummet-web
+    ports:
+      # Only this computer can open the dashboard. The API has no login.
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  plummet-data:
+  plummet-logs:
