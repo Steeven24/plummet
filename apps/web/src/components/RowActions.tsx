@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { useDeleteProduct, useUpdateProduct } from "../hooks/mutations";
 import type { Product } from "../lib/types";
+import { BellIcon, BellOffIcon, TrashIcon } from "./Icons";
 
 /** Bell to turn alerts on or off, and a delete button that asks first. */
 export function RowActions({ product }: { product: Product }) {
@@ -37,9 +38,9 @@ export function RowActions({ product }: { product: Product }) {
         aria-label={on ? "Turn alerts off" : "Turn alerts on"}
         title={on ? "Alerts on" : "Alerts off"}
         onClick={() => update.mutate({ id: product.id, changes: { alerts_enabled: !on } })}
-        style={{ opacity: on ? 1 : 0.5 }}
+        style={{ color: on ? "var(--primary)" : "var(--muted)" }}
       >
-        {on ? "🔔" : "🔕"}
+        {on ? <BellIcon /> : <BellOffIcon />}
       </button>
       <button
         className="btn btn-ghost btn-icon"
@@ -47,7 +48,7 @@ export function RowActions({ product }: { product: Product }) {
         aria-label={`Delete ${product.name ?? product.store}`}
         onClick={() => setConfirming(true)}
       >
-        🗑
+        <TrashIcon />
       </button>
     </>
   );

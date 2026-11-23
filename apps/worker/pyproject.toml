@@ -1,6 +1,6 @@
 [project]
 name = "plummet-worker"
-version = "0.1.0"
+version = "1.0.0"
 description = "Runs the price checks on a schedule"
 requires-python = ">=3.12"
 dependencies = ["plummet-core"]

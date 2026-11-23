@@ -16,13 +16,14 @@
 }
 
 .table {
-  min-width: 700px;
+  min-width: 740px;
 }
 
 .row {
   display: grid;
-  grid-template-columns: minmax(0, 2.4fr) 90px 1fr 1fr 1.1fr 84px;
-  gap: 12px;
+  /* Fixed widths, so the columns line up in every row */
+  grid-template-columns: minmax(150px, 1fr) 80px 110px 118px 106px 76px;
+  gap: 10px;
   align-items: center;
   padding: 12px 22px;
   border-bottom: 1px solid var(--line-2);

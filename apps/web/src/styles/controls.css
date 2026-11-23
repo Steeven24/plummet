@@ -56,6 +56,7 @@
   border-radius: var(--r-pill);
   font-size: 12px;
   font-weight: 500;
+  white-space: nowrap;
   background: var(--line-2);
   color: var(--ink-2);
 }

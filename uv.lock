@@ -191,7 +191,7 @@ wheels = [
 
 [[package]]
 name = "plummet"
-version = "0.1.0"
+version = "1.0.0"
 source = { virtual = "." }
 
 [package.dev-dependencies]
@@ -210,7 +210,7 @@ dev = [
 
 [[package]]
 name = "plummet-api"
-version = "0.1.0"
+version = "1.0.0"
 source = { editable = "apps/api" }
 dependencies = [
     { name = "fastapi" },
@@ -227,7 +227,7 @@ requires-dist = [
 
 [[package]]
 name = "plummet-bot"
-version = "0.1.0"
+version = "1.0.0"
 source = { editable = "apps/bot" }
 dependencies = [
     { name = "plummet-core" },
@@ -242,7 +242,7 @@ requires-dist = [
 
 [[package]]
 name = "plummet-core"
-version = "0.1.0"
+version = "1.0.0"
 source = { editable = "packages/core" }
 dependencies = [
     { name = "beautifulsoup4" },
@@ -261,7 +261,7 @@ requires-dist = [
 
 [[package]]
 name = "plummet-worker"
-version = "0.1.0"
+version = "1.0.0"
 source = { editable = "apps/worker" }
 dependencies = [
     { name = "plummet-core" },

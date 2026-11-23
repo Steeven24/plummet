@@ -5,15 +5,55 @@
 Plummet is a self-hosted price tracker. It checks online stores on a schedule
 and sends you a Telegram message when a price drops below your target.
 
-> 🚧 Work in progress. More details soon.
+![Plummet dashboard](docs/images/dashboard-light.png)
 
-## Planned features
+## Features
 
-- Track products from any online store with a URL
-- Save the price history of each product
-- Get Telegram alerts when the price goes down
-- Run checks automatically with cron
-- See everything in a simple web dashboard
+- **Track any store.** Paste a product link. Plummet finds the price with
+  JSON-LD, meta tags, built-in selectors (Amazon, Mercado Libre, eBay) or
+  your own CSS selector.
+- **Telegram alerts.** Get a message when the price goes under your target
+  or drops a lot. No spam: the same alert is not sent again and again.
+- **Telegram bot.** Add, list, change and remove products from the chat.
+- **Price history.** Every price is saved, so you can see the trend.
+- **Web dashboard.** Summary cards, price chart with your target, product
+  table, alert feed and the state of the scheduled job. Light and dark theme.
+- **Runs alone.** Use cron, or Docker with one command.
+- **Safe by default.** The bot only answers you, tokens never go to the
+  logs, and the dashboard only listens on your computer.
+
+| Dark theme | Phone |
+|---|---|
+| ![Dark theme](docs/images/dashboard-dark.png) | ![Phone view](docs/images/dashboard-phone.png) |
+
+## Quick start
+
+The fastest way to see it working, with example data:
+
+```bash
+git clone https://github.com/Steeven24/plummet.git
+cd plummet
+make install
+uv run plummet-worker demo   # fills an empty database with example products
+make api                     # terminal 1
+make web                     # terminal 2 → http://localhost:5173
+```
+
+To use it for real, follow [Configuration](#configuration),
+[Set up Telegram alerts](#set-up-telegram-alerts) and
+[Run everything with Docker](#run-everything-with-docker).
+
+## Tech stack
+
+| Part | Tools |
+|---|---|
+| Scraping | httpx, BeautifulSoup |
+| Data | SQLite, SQLAlchemy 2 |
+| API | FastAPI |
+| Bot | python-telegram-bot |
+| Dashboard | React, TypeScript, Vite, React Query |
+| Quality | pytest, ruff, vitest, GitHub Actions |
+| Deploy | cron or Docker Compose |
 
 ## Project structure
 

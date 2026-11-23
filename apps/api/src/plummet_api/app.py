@@ -16,7 +16,7 @@ def create_app(engine: Engine | None = None, settings: Settings | None = None) -
         engine = make_engine()
     init_db(engine)
 
-    app = FastAPI(title="Plummet API", version="0.1.0")
+    app = FastAPI(title="Plummet API", version="1.0.0")
     app.state.engine = engine
     app.add_middleware(
         CORSMiddleware,
