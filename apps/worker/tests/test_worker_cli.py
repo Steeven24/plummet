@@ -1,6 +1,8 @@
 import pytest
 
+from plummet_core import repository as repo
 from plummet_core.config import get_settings
+from plummet_core.db import make_engine, session_scope
 from plummet_worker.lock import RunLock
 from plummet_worker.main import main
 
@@ -61,3 +63,16 @@ def test_loop_runs_rounds(temp_project, caplog, monkeypatch):
     assert waits == [30 * 60]
     assert caplog.text.count("Starting round") == 2
     assert "Next round in 30 minutes" in caplog.text
+
+
+def test_demo_fills_an_empty_database(capsys):
+    assert main(["demo"]) == 0
+    with session_scope(make_engine()) as session:
+        products = repo.list_products(session)
+        assert len(products) == 5
+        assert len(repo.price_history(session, products[0].id, days=90)) == 90
+        assert repo.recent_alerts(session)
+        assert repo.recent_runs(session)
+
+    assert main(["demo"]) == 1
+    assert "already has products" in capsys.readouterr().out

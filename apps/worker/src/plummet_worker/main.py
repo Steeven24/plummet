@@ -13,6 +13,7 @@ from plummet_core.db import init_db, make_engine, session_scope
 from plummet_core.parsing import store_name
 from plummet_core.telegram import TelegramClient, TelegramError
 from plummet_worker.cron import crontab_line
+from plummet_worker.demo import fill_demo_data
 from plummet_worker.lock import AlreadyRunning, RunLock
 from plummet_worker.logs import setup_logging
 from plummet_worker.round import run_round
@@ -69,6 +70,20 @@ def cmd_add(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_demo(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    setup_logging(settings.log_level, settings.worker_log_file)
+    engine = make_engine()
+    init_db(engine)
+    with session_scope(engine) as session:
+        if repo.list_products(session):
+            print("The database already has products. Demo data is only for an empty one.")
+            return 1
+        count = fill_demo_data(session)
+    logger.info("Demo data added: %d products with 90 days of prices", count)
+    return 0
+
+
 def cmd_cron(args: argparse.Namespace) -> int:
     root = Path(__file__).resolve().parents[4]  # the monorepo folder
     script, log_file = root / "deploy" / "run-worker.sh", root / "logs" / "cron.log"
@@ -113,6 +128,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     cron = commands.add_parser("cron", help="print the line to add with `crontab -e`")
     cron.set_defaults(func=cmd_cron)
+
+    demo = commands.add_parser("demo", help="fill an empty database with example data")
+    demo.set_defaults(func=cmd_demo)
 
     test = commands.add_parser("test-telegram", help="send a test message to Telegram")
     test.set_defaults(func=cmd_test_telegram)
