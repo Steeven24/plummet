@@ -2,6 +2,7 @@ import { type FormEvent, useState } from "react";
 
 import { useAddProduct } from "../hooks/mutations";
 import { ApiError } from "../lib/api";
+import { parseAmount } from "../lib/format";
 
 function errorText(error: unknown): string {
   if (error instanceof ApiError && error.status === 422) {
@@ -14,12 +15,15 @@ function errorText(error: unknown): string {
 export function AddProductForm() {
   const [url, setUrl] = useState("");
   const [target, setTarget] = useState("");
+  const [badTarget, setBadTarget] = useState(false);
   const add = useAddProduct();
 
   function submit(event: FormEvent) {
     event.preventDefault();
     if (!url.trim()) return;
-    const targetPrice = target.trim() ? Number(target.replace(",", ".")) : null;
+    const targetPrice = target.trim() ? parseAmount(target) : null;
+    setBadTarget(target.trim() !== "" && targetPrice === null);
+    if (target.trim() && targetPrice === null) return;
     add.mutate(
       { url: url.trim(), target_price: targetPrice },
       { onSuccess: () => (setUrl(""), setTarget("")) },
@@ -54,6 +58,11 @@ export function AddProductForm() {
           {add.isPending ? "Adding…" : "Track"}
         </button>
       </div>
+      {badTarget && (
+        <span role="alert" style={{ color: "var(--rise)", fontSize: 13 }}>
+          The target must be a price, like 79.99.
+        </span>
+      )}
       {add.isError && (
         <span role="alert" style={{ color: "var(--rise)", fontSize: 13 }}>
           {errorText(add.error)}
