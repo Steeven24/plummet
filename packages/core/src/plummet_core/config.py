@@ -1,6 +1,7 @@
 """App settings loaded from environment variables or a .env file."""
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -40,6 +41,7 @@ class Settings(BaseSettings):
 
     # Logging
     log_level: str = "INFO"
+    worker_log_file: Path = Path("logs/worker.log")
 
     # API for the web dashboard
     api_host: str = "127.0.0.1"
