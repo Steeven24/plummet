@@ -1,0 +1,43 @@
+.panel {
+  overflow: hidden;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--line);
+  font-weight: 500;
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+.table {
+  min-width: 700px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 2.4fr) 90px 1fr 1fr 1.1fr 84px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 22px;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.header {
+  padding-block: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.selectable {
+  cursor: pointer;
+}
+.selectable:hover,
+.selected {
+  background: var(--surface-2);
+}
