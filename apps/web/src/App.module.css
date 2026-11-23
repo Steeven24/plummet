@@ -20,3 +20,10 @@
 .side {
   flex: 1 1 320px;
 }
+
+/* On big screens the right column keeps a fixed width, so the table has more room. */
+@media (min-width: 1200px) {
+  .side {
+    flex: 0 0 380px;
+  }
+}
