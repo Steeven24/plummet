@@ -1,5 +1,7 @@
 # Plummet 🔻
 
+[![CI](https://github.com/Steeven24/plummet/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/Steeven24/plummet/actions/workflows/ci.yml)
+
 Plummet is a self-hosted price tracker. It checks online stores on a schedule
 and sends you a Telegram message when a price drops below your target.
 
@@ -27,6 +29,7 @@ plummet/
 ├── packages/
 │   └── core/      # Shared code: database, scrapers, price logic
 ├── deploy/        # Cron script and examples
+├── .github/       # CI workflow and PR template
 └── Makefile       # Common commands
 ```
 
@@ -39,6 +42,8 @@ make install   # install all packages
 make test      # run the tests
 make lint      # check the code style
 ```
+
+GitHub Actions runs the same lint and tests on every pull request.
 
 ## Configuration
 
