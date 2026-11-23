@@ -33,7 +33,7 @@ export function TargetEditor({ product }: { product: Product }) {
         className="mono"
         title="Change target price"
         onClick={start}
-        style={{ padding: 0, border: "none", background: "none", color: "var(--muted)", cursor: "pointer", textAlign: "left" }}
+        style={{ padding: 0, border: "none", background: "none", color: "var(--muted)", cursor: "pointer", textAlign: "left", whiteSpace: "nowrap" }}
       >
         {formatPrice(product.target_price, product.currency)} ✎
       </button>
