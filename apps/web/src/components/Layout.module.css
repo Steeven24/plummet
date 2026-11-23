@@ -55,6 +55,9 @@
 }
 
 .footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   margin-top: auto;
 }
 
@@ -85,8 +88,14 @@
     overflow-x: auto;
   }
   .footer {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    width: 100%;
     margin-top: 0;
-    margin-left: auto;
+  }
+  .footer > * {
+    flex: 1 1 180px;
   }
   .main {
     padding: 20px 16px 40px;

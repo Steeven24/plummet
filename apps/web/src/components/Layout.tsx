@@ -38,7 +38,7 @@ export function Layout({ children }: { children: ReactNode }) {
             </a>
           ))}
         </nav>
-        <div className={styles.footer} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className={styles.footer}>
           <TelegramStatus />
           <ThemeToggle />
         </div>
