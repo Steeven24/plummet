@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatChange, formatPrice, timeAgo, timeUntil } from "./format";
+import { formatChange, formatPrice, parseAmount, timeAgo, timeUntil } from "./format";
 
 describe("formatPrice", () => {
   it("shows the currency", () => {
@@ -36,5 +36,20 @@ describe("relative times", () => {
   it("timeUntil", () => {
     expect(timeUntil("2026-11-12T10:22:00Z", now)).toBe("in 22 min");
     expect(timeUntil("2026-11-12T09:00:00Z", now)).toBe("soon");
+  });
+});
+
+describe("parseAmount", () => {
+  it.each([
+    ["99.90", 99.9],
+    ["99,90", 99.9],
+    ["1,299.99", 1299.99],
+    ["1.299,99", 1299.99],
+    ["$ 2.549", 2549],
+    ["0", null],
+    ["cheap", null],
+    ["", null],
+  ])("%s → %s", (text, value) => {
+    expect(parseAmount(text)).toBe(value);
   });
 });
