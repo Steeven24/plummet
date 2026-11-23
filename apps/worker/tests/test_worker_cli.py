@@ -1,0 +1,78 @@
+import pytest
+
+from plummet_core import repository as repo
+from plummet_core.config import get_settings
+from plummet_core.db import make_engine, session_scope
+from plummet_worker.lock import RunLock
+from plummet_worker.main import main
+
+
+@pytest.fixture(autouse=True)
+def temp_project(tmp_path, monkeypatch):
+    """Run each command in an empty folder with its own database."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("PLUMMET_DATABASE_URL", f"sqlite:///{tmp_path / 'test.db'}")
+    get_settings.cache_clear()
+    yield tmp_path
+    get_settings.cache_clear()
+
+
+def test_add_product(capsys):
+    assert main(["add", "https://www.shop.test/a", "--target", "19.99"]) == 0
+    assert "Tracking product 1 from shop.test" in capsys.readouterr().out
+
+
+def test_add_same_product_twice(capsys):
+    main(["add", "https://shop.test/a"])
+
+    assert main(["add", "https://shop.test/a"]) == 1
+    assert "Already tracking" in capsys.readouterr().out
+
+
+def test_run_without_products_works(temp_project):
+    assert main(["run"]) == 0
+    assert (temp_project / "logs" / "worker.log").exists()
+
+
+def test_run_is_skipped_when_another_round_is_running(temp_project, caplog):
+    with RunLock(temp_project / "data" / "worker.lock"):
+        assert main(["run"]) == 0
+    assert "Skipping this round" in caplog.text
+
+
+def test_cron_prints_line(capsys, monkeypatch):
+    monkeypatch.setenv("PLUMMET_CHECK_INTERVAL_MINUTES", "15")
+
+    main(["cron"])
+
+    assert capsys.readouterr().out.startswith("*/15 * * * * ")
+
+
+def test_test_telegram_without_settings(capsys, monkeypatch):
+    monkeypatch.delenv("PLUMMET_TELEGRAM_BOT_TOKEN", raising=False)
+
+    assert main(["test-telegram"]) == 1
+    assert "Set PLUMMET_TELEGRAM_BOT_TOKEN" in capsys.readouterr().out
+
+
+def test_loop_runs_rounds(temp_project, caplog, monkeypatch):
+    waits = []
+    monkeypatch.setattr("plummet_worker.main.time.sleep", waits.append)
+
+    assert main(["loop", "--rounds", "2"]) == 0
+    assert waits == [30 * 60]
+    assert caplog.text.count("Starting round") == 2
+    assert "Next round in 30 minutes" in caplog.text
+
+
+def test_demo_fills_an_empty_database(capsys):
+    assert main(["demo"]) == 0
+    with session_scope(make_engine()) as session:
+        products = repo.list_products(session)
+        assert len(products) == 5
+        assert len(repo.price_history(session, products[0].id, days=90)) == 90
+        assert repo.recent_alerts(session)
+        assert repo.recent_runs(session)
+
+    assert main(["demo"]) == 1
+    assert "already has products" in capsys.readouterr().out

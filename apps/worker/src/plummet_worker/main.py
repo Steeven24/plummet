@@ -1,0 +1,147 @@
+"""Command line for the worker. Cron runs `plummet-worker run`."""
+
+import argparse
+import logging
+import time
+from collections.abc import Sequence
+from decimal import Decimal
+from pathlib import Path
+
+from plummet_core import repository as repo
+from plummet_core.config import get_settings
+from plummet_core.db import init_db, make_engine, session_scope
+from plummet_core.parsing import store_name
+from plummet_core.telegram import TelegramClient, TelegramError
+from plummet_worker.cron import crontab_line
+from plummet_worker.demo import fill_demo_data
+from plummet_worker.lock import AlreadyRunning, RunLock
+from plummet_worker.logs import setup_logging
+from plummet_worker.round import run_round
+
+logger = logging.getLogger("plummet.worker")
+
+
+def cmd_run(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    setup_logging(settings.log_level, args.log_file or settings.worker_log_file)
+    telegram = TelegramClient.from_settings(settings)
+    try:
+        with RunLock(args.lock_file):
+            engine = make_engine()
+            init_db(engine)
+            summary = run_round(engine, settings, telegram=telegram)
+    except AlreadyRunning as error:
+        logger.info("%s. Skipping this round.", error)
+        return 0
+    finally:
+        if telegram is not None:
+            telegram.close()
+    all_failed = bool(summary.results) and len(summary.errors) == len(summary.results)
+    return 1 if all_failed else 0
+
+
+def cmd_loop(args: argparse.Namespace) -> int:
+    """Run a round, wait, and run again. For Docker, where there is no cron."""
+    minutes = get_settings().check_interval_minutes
+    done = 0
+    while True:
+        try:
+            cmd_run(args)
+        except Exception:
+            logger.exception("The round failed. Trying again in the next round.")
+        done += 1
+        if args.rounds is not None and done >= args.rounds:
+            return 0
+        logger.info("Next round in %d minutes", minutes)
+        time.sleep(minutes * 60)
+
+
+def cmd_add(args: argparse.Namespace) -> int:
+    engine = make_engine()
+    init_db(engine)
+    with session_scope(engine) as session:
+        if repo.get_product_by_url(session, args.url):
+            print(f"Already tracking {args.url}")
+            return 1
+        product = repo.add_product(
+            session, args.url, store_name(args.url), args.target, price_selector=args.selector
+        )
+        print(f"Tracking product {product.id} from {product.store}")
+    return 0
+
+
+def cmd_demo(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    setup_logging(settings.log_level, settings.worker_log_file)
+    engine = make_engine()
+    init_db(engine)
+    with session_scope(engine) as session:
+        if repo.list_products(session):
+            print("The database already has products. Demo data is only for an empty one.")
+            return 1
+        count = fill_demo_data(session)
+    logger.info("Demo data added: %d products with 90 days of prices", count)
+    return 0
+
+
+def cmd_cron(args: argparse.Namespace) -> int:
+    root = Path(__file__).resolve().parents[4]  # the monorepo folder
+    script, log_file = root / "deploy" / "run-worker.sh", root / "logs" / "cron.log"
+    print(crontab_line(get_settings().check_interval_minutes, str(script), str(log_file)))
+    return 0
+
+
+def cmd_test_telegram(args: argparse.Namespace) -> int:
+    telegram = TelegramClient.from_settings(get_settings())
+    if telegram is None:
+        print("Set PLUMMET_TELEGRAM_BOT_TOKEN and PLUMMET_TELEGRAM_CHAT_ID first.")
+        return 1
+    try:
+        telegram.send_message("✅ <b>Plummet is connected.</b> You will get price alerts here.")
+    except TelegramError as error:
+        print(f"Could not send the message: {error}")
+        return 1
+    finally:
+        telegram.close()
+    print("Message sent. Check your Telegram.")
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="plummet-worker", description="Check product prices.")
+    commands = parser.add_subparsers(dest="command", required=True)
+
+    run = commands.add_parser("run", help="check all products once")
+    loop = commands.add_parser("loop", help="check all products again and again (no cron)")
+    for command in (run, loop):
+        command.add_argument("--log-file", type=Path, help="default: PLUMMET_WORKER_LOG_FILE")
+        command.add_argument("--lock-file", type=Path, default=Path("data/worker.lock"))
+    run.set_defaults(func=cmd_run)
+    loop.add_argument("--rounds", type=int, help=argparse.SUPPRESS)  # used by the tests
+    loop.set_defaults(func=cmd_loop)
+
+    add = commands.add_parser("add", help="start tracking a product")
+    add.add_argument("url")
+    add.add_argument("--target", type=Decimal, help="alert when the price is this or less")
+    add.add_argument("--selector", help="CSS selector of the price, if needed")
+    add.set_defaults(func=cmd_add)
+
+    cron = commands.add_parser("cron", help="print the line to add with `crontab -e`")
+    cron.set_defaults(func=cmd_cron)
+
+    demo = commands.add_parser("demo", help="fill an empty database with example data")
+    demo.set_defaults(func=cmd_demo)
+
+    test = commands.add_parser("test-telegram", help="send a test message to Telegram")
+    test.set_defaults(func=cmd_test_telegram)
+
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

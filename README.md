@@ -1,14 +1,311 @@
 # Plummet 🔻
 
+[![CI](https://github.com/Steeven24/plummet/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/Steeven24/plummet/actions/workflows/ci.yml)
+
 Plummet is a self-hosted price tracker. It checks online stores on a schedule
 and sends you a Telegram message when a price drops below your target.
 
-> 🚧 Work in progress. More details soon.
+![Plummet dashboard](docs/images/dashboard-light.png)
 
-## Planned features
+## Features
 
-- Track products from any online store with a URL
-- Save the price history of each product
-- Get Telegram alerts when the price goes down
-- Run checks automatically with cron
-- See everything in a simple web dashboard
+- **Track any store.** Paste a product link. Plummet finds the price with
+  JSON-LD, meta tags, built-in selectors (Amazon, Mercado Libre, eBay) or
+  your own CSS selector.
+- **Telegram alerts.** Get a message when the price goes under your target
+  or drops a lot. No spam: the same alert is not sent again and again.
+- **Telegram bot.** Add, list, change and remove products from the chat.
+- **Price history.** Every price is saved, so you can see the trend.
+- **Web dashboard.** Summary cards, price chart with your target, product
+  table, alert feed and the state of the scheduled job. Light and dark theme.
+- **Runs alone.** Use cron, or Docker with one command.
+- **Safe by default.** The bot only answers you, tokens never go to the
+  logs, and the dashboard only listens on your computer.
+
+| Dark theme | Phone |
+|---|---|
+| ![Dark theme](docs/images/dashboard-dark.png) | ![Phone view](docs/images/dashboard-phone.png) |
+
+## Quick start
+
+The fastest way to see it working, with example data:
+
+```bash
+git clone https://github.com/Steeven24/plummet.git
+cd plummet
+make install
+uv run plummet-worker demo   # fills an empty database with example products
+make api                     # terminal 1
+make web                     # terminal 2 → http://localhost:5173
+```
+
+To use it for real, follow [Configuration](#configuration),
+[Set up Telegram alerts](#set-up-telegram-alerts) and
+[Run everything with Docker](#run-everything-with-docker).
+
+## Tech stack
+
+| Part | Tools |
+|---|---|
+| Scraping | httpx, BeautifulSoup |
+| Data | SQLite, SQLAlchemy 2 |
+| API | FastAPI |
+| Bot | python-telegram-bot |
+| Dashboard | React, TypeScript, Vite, React Query |
+| Quality | pytest, ruff, vitest, GitHub Actions |
+| Deploy | cron or Docker Compose |
+
+## Project structure
+
+This is a monorepo. Each app lives in its own folder and they all share
+the code in `packages/core`.
+
+```
+plummet/
+├── apps/
+│   ├── api/       # REST API (FastAPI) for the web dashboard
+│   ├── bot/       # Telegram bot to manage your products
+│   ├── web/       # Web dashboard (React + Vite + TypeScript)
+│   └── worker/    # Runs the price checks with cron
+├── packages/
+│   └── core/      # Shared code: database, scrapers, price logic
+├── deploy/        # Cron script and Docker files
+├── .github/       # CI workflow and PR template
+└── Makefile       # Common commands
+```
+
+## Getting started
+
+You need Python 3.12, [uv](https://docs.astral.sh/uv/) and Node.js 20 or newer.
+
+```bash
+make install   # install all packages
+make test      # run the tests
+make lint      # check the code style
+```
+
+GitHub Actions runs the same lint and tests on every pull request.
+
+## Configuration
+
+Plummet reads its settings from environment variables or from a `.env` file.
+All variables start with `PLUMMET_`.
+
+```bash
+cp .env.example .env
+```
+
+| Variable | Default | What it does |
+|---|---|---|
+| `PLUMMET_DATABASE_URL` | `sqlite:///data/plummet.db` | Where the data is saved |
+| `PLUMMET_TELEGRAM_BOT_TOKEN` | — | Token from @BotFather |
+| `PLUMMET_TELEGRAM_CHAT_ID` | — | Chat that gets the alerts |
+| `PLUMMET_REQUEST_TIMEOUT` | `15` | Seconds to wait for a store page |
+| `PLUMMET_MAX_RETRIES` | `3` | Tries before a check fails |
+| `PLUMMET_CHECK_INTERVAL_MINUTES` | `30` | Time between checks (min. 5) |
+| `PLUMMET_MIN_DROP_PERCENT` | `5` | Price drop (%) that sends an alert |
+| `PLUMMET_LOG_LEVEL` | `INFO` | How much detail the logs show |
+
+Telegram alerts only work when both the token and the chat ID are set.
+
+## Data
+
+Plummet uses SQLite by default, so you do not need a database server.
+The file is created at `data/plummet.db` the first time the app runs.
+
+| Table | What it saves |
+|---|---|
+| `products` | The URL, store, target price and last price of each product |
+| `price_records` | Every price found for a product, with the date |
+| `check_runs` | Each round of checks: time, seconds, alerts and errors |
+| `sent_alerts` | Every alert message and if Telegram got it |
+
+Prices are saved as whole cents (for example `1999` for `19.99`)
+to avoid rounding problems. All dates are in UTC.
+
+## How pages are downloaded
+
+The fetcher in `plummet_core.fetcher` downloads each store page with
+browser-like headers. When a request fails for a temporary reason
+(network error, `429` or `5xx`), it tries again and waits a bit longer
+each time: 1s, 2s, 4s... If the store sends a `Retry-After` header, it
+waits that time instead (max 30s). Errors like `404` fail at once.
+
+Please be polite with stores: do not check the same product too often.
+
+## How prices are found
+
+`plummet_core.parsing.parse_product()` reads the page HTML and tries
+these ways in order. It uses the first one that finds a price:
+
+1. A CSS selector you give for the product (optional)
+2. JSON-LD data (`schema.org/Product`), which many stores add for Google
+3. Meta tags (`product:price:amount`) and microdata (`itemprop="price"`)
+4. Built-in selectors for known stores: Amazon, Mercado Libre and eBay
+
+It understands prices like `$1,299.99`, `1.299,99 €` or `$ 2.549`, and it
+finds the currency when it is clear (`US$`, `R$`, `€`, `MXN`...).
+
+## When you get an alert
+
+`plummet_core.checker.check_all()` checks every product, saves the new
+price and decides if it is good news. There are two kinds of alerts:
+
+| Alert | When |
+|---|---|
+| `below_target` | The price goes to or under your target price |
+| `price_drop` | The price goes down at least `PLUMMET_MIN_DROP_PERCENT` since the last check |
+
+To avoid spam, `below_target` is sent only once, when the price crosses
+the target. If the price stays under the target, you only get a new alert
+when it drops a lot again. You can turn off alerts for each product.
+
+If a product fails (page not found, no price...), the error is saved on
+the product and the other products are still checked.
+
+## Set up Telegram alerts
+
+1. Open Telegram, talk to [@BotFather](https://t.me/BotFather) and send `/newbot`.
+   It gives you a token like `123456:ABC-DEF...`.
+2. Send any message to your new bot.
+3. Open `https://api.telegram.org/bot<TOKEN>/getUpdates` in your browser and
+   copy the number in `"chat":{"id": ...}`. This is your chat ID.
+4. Add both values to your `.env` file:
+
+   ```bash
+   PLUMMET_TELEGRAM_BOT_TOKEN=123456:ABC-DEF...
+   PLUMMET_TELEGRAM_CHAT_ID=987654321
+   ```
+
+5. Check that it works:
+
+   ```bash
+   uv run plummet-worker test-telegram
+   ```
+
+After each round, the worker sends one message per alert. Every alert is
+also saved in the `sent_alerts` table, even when Telegram fails, so you
+can see it later in the dashboard. Keep your token secret: Plummet never
+writes it in the logs.
+
+## Use the Telegram bot
+
+The bot lets you manage your products from the chat. Start it with:
+
+```bash
+make bot
+```
+
+| Command | What it does |
+|---|---|
+| `/add <url> [target]` | Track a product, for example `/add https://... 79.99` |
+| `/list` | See your products, last price, target and alerts |
+| `/target <id> <price>` | Change the target price (`none` removes it) |
+| `/alerts <id> on\|off` | Turn alerts on or off for a product |
+| `/remove <id>` | Stop tracking a product |
+| `/help` | Show all commands |
+
+The bot is private: it only answers the chat in `PLUMMET_TELEGRAM_CHAT_ID`
+and ignores everybody else. It must keep running to answer commands, but
+alerts are sent by the worker, so they work even when the bot is stopped.
+
+## API
+
+The API gives the data to the web dashboard. Start it with:
+
+```bash
+make api
+```
+
+It runs on `http://127.0.0.1:8000`. Open `http://127.0.0.1:8000/docs`
+to see all routes and try them in the browser.
+
+| Method | Route | What it does |
+|---|---|---|
+| `GET` | `/api/health` | Check that the API is running |
+| `GET` | `/api/products` | List all products |
+| `POST` | `/api/products` | Add a product: `{"url": "...", "target_price": "79.99"}` |
+| `GET` | `/api/products/{id}` | Get one product |
+| `PATCH` | `/api/products/{id}` | Change `target_price`, `alerts_enabled` or `price_selector` |
+| `DELETE` | `/api/products/{id}` | Stop tracking a product |
+| `GET` | `/api/products/{id}/history?days=30` | Price history of a product |
+| `GET` | `/api/overview` | Numbers for the top cards: products, alerts, savings |
+| `GET` | `/api/alerts?days=7` | Last alerts sent to Telegram |
+| `GET` | `/api/cron` | Cron schedule, last round, success rate, average time |
+| `GET` | `/api/cron/logs?lines=20` | Last lines of the worker log |
+
+`GET /api/products` also returns `trend` (one price per day, last 30 days)
+and `change_7d` (price change in the last 7 days, in %).
+
+The API has no login, so by default it only listens on `127.0.0.1`.
+Do not open it to the internet.
+
+## Web dashboard
+
+The dashboard is in `apps/web`. Start the API and the dashboard in two terminals:
+
+```bash
+make api   # terminal 1
+make web   # terminal 2
+```
+
+Then open http://localhost:5173. In development, Vite sends `/api` calls
+to the API, so you do not need to set up CORS.
+
+- Fonts: Onest for text and JetBrains Mono for numbers. They are part of
+  the app, so the dashboard does not load anything from Google.
+- Light and dark theme. By default it follows your system.
+- Data refreshes every minute.
+
+## Run everything with Docker
+
+This is the easiest way to run Plummet on a server or on your computer.
+You only need Docker.
+
+```bash
+cp .env.example .env      # add your Telegram token and chat ID
+make up                   # or: docker compose up -d --build
+```
+
+Then open http://localhost:8080.
+
+| Service | What it does |
+|---|---|
+| `web` | The dashboard (nginx). It sends `/api` calls to the API |
+| `api` | The REST API |
+| `worker` | Checks prices again and again with `plummet-worker loop` (no cron needed) |
+| `bot` | The Telegram bot. Start it with `docker compose --profile bot up -d` |
+
+- The database and the logs are saved in Docker volumes, so `make down`
+  does not delete them.
+- The dashboard only listens on `127.0.0.1:8080`. The API has no login,
+  so do not open this port to the internet. Use a VPN or an SSH tunnel.
+- The containers do not run as root.
+
+## Run the checks with cron
+
+The worker app checks all products once and stops. Cron runs it again
+and again.
+
+```bash
+# Add a product (you can also use /add in the Telegram bot)
+uv run plummet-worker add "https://www.amazon.com/dp/B0..." --target 79.99
+
+# Check all prices once
+make check-prices
+
+# Print the line for your crontab, with your paths and interval
+uv run plummet-worker cron
+```
+
+Then run `crontab -e` and paste the line. It looks like this:
+
+```
+*/30 * * * * /path/to/plummet/deploy/run-worker.sh >> /path/to/plummet/logs/cron.log 2>&1
+```
+
+- Logs are saved in `logs/worker.log` (max 1 MB, 5 old files are kept).
+- If a round is still running when cron starts the next one, the new one
+  is skipped. A lock file in `data/worker.lock` controls this.
+- Each round is saved in the `check_runs` table: time, seconds, products
+  checked, alerts and errors. The dashboard will use it.
